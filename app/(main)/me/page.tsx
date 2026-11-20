@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Ban, Bookmark, ChevronRight, FileText, Heart, LifeBuoy, LogOut, UserPen } from "lucide-react";
+import { Ban, Bell, Bookmark, ChevronRight, FileText, Heart, LifeBuoy, LogOut, UserPen } from "lucide-react";
 import { getUser } from "@/lib/supabase/server";
 import { getMyProfile } from "@/lib/data";
 import { signOut } from "@/app/(auth)/actions";
@@ -16,6 +16,7 @@ export default async function MePage() {
     { href: "/me/posts", label: "내가 쓴 이야기", Icon: FileText },
     { href: "/me/saved", label: "저장한 글", Icon: Bookmark },
     { href: "/me/blocks", label: "차단 목록", Icon: Ban },
+    { href: "/me/notifications", label: "알림 설정", Icon: Bell },
     { href: "/help", label: "도움이 필요할 때 (109, 112/119)", Icon: LifeBuoy },
   ];
   return (

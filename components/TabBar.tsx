@@ -11,7 +11,7 @@ const TABS = [
   { href: "/me", label: "마이", Icon: User },
 ];
 
-export function TabBar() {
+export function TabBar({ unread = 0 }: { unread?: number }) {
   const path = usePathname();
   return (
     <nav
@@ -29,7 +29,14 @@ export function TabBar() {
                   on ? "font-semibold text-point-strong" : "text-ink-soft"
                 }`}
               >
-                <Icon size={22} strokeWidth={1.75} />
+                <span className="relative">
+                  <Icon size={22} strokeWidth={1.75} />
+                  {href === "/notifications" && unread > 0 && (
+                    <span className="absolute -right-2 -top-1 min-w-4 rounded-full bg-danger px-1 text-center text-[10px] font-bold leading-4 text-white">
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  )}
+                </span>
                 {label}
               </Link>
             </li>

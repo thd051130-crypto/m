@@ -31,6 +31,11 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  // 관리자: 비로그인은 404 (권한은 서버에서 profiles.role로 다시 확인)
+  if (path === "/admin" || path.startsWith("/admin/")) {
+    if (!user) return new NextResponse("Not Found", { status: 404 });
+    return response;
+  }
   if (!user && PROTECTED.some((p) => path === p || path.startsWith(p + "/"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -47,5 +52,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|avatars/|.*\\.(?:svg|png|jpg|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icons/|sw.js|manifest.webmanifest|.*\\.(?:svg|png|jpg|webp)$).*)"],
 };
