@@ -2,9 +2,10 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/supabase/server";
+import { checkText, recordSafety } from "@/lib/safety/check";
 import { CATEGORIES, COMMENT_MAX, POST_MAX, POST_MIN, REACTIONS, REPORT_REASONS, keysOf } from "@/lib/constants";
 
-export type ActionState = { error?: string; ok?: boolean };
+export type ActionState = { error?: string; ok?: boolean; crisis?: boolean };
 
 async function requireUser() {
   const { supabase, user } = await getUser();
@@ -19,31 +20,38 @@ function writeError(code?: string) {
 }
 
 export async function createPost(_: ActionState, form: FormData): Promise<ActionState> {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const category = String(form.get("category") ?? "");
   const body = String(form.get("body") ?? "").trim();
   if (!keysOf(CATEGORIES).has(category)) return { error: "카테고리를 골라 주세요." };
   if (body.length < POST_MIN) return { error: `${POST_MIN}자 이상 적어 주세요.` };
   if (body.length > POST_MAX) return { error: `${POST_MAX}자까지 쓸 수 있어요.` };
 
+  const verdict = await checkText(body);
+  if (verdict.action === "block") return { error: verdict.message };
+
   // author_id는 보내지 않는다. DB 트리거가 auth.uid()로 채운다.
   const { data, error } = await supabase.from("posts").insert({ category, body }).select("id").single();
   if (error) return { error: writeError(error.code) };
+  await recordSafety(verdict, { type: "post", id: data.id, userId: user.id });
   revalidatePath("/stories");
   revalidatePath("/home");
-  redirect(`/stories/${data.id}`);
+  redirect(`/stories/${data.id}${verdict.crisis ? "?help=1" : ""}`);
 }
 
 export async function addComment(_: ActionState, form: FormData): Promise<ActionState> {
-  const { supabase } = await requireUser();
+  const { supabase, user } = await requireUser();
   const postId = String(form.get("post_id") ?? "");
   const body = String(form.get("body") ?? "").trim();
   if (!body) return { error: "내용을 적어 주세요." };
   if (body.length > COMMENT_MAX) return { error: `${COMMENT_MAX}자까지 쓸 수 있어요.` };
-  const { error } = await supabase.from("comments").insert({ post_id: postId, body });
+  const verdict = await checkText(body);
+  if (verdict.action === "block") return { error: verdict.message };
+  const { data, error } = await supabase.from("comments").insert({ post_id: postId, body }).select("id").single();
   if (error) return { error: writeError(error.code) };
+  await recordSafety(verdict, { type: "comment", id: data.id, userId: user.id });
   revalidatePath(`/stories/${postId}`);
-  return { ok: true };
+  return { ok: true, crisis: verdict.action === "allow" && verdict.crisis };
 }
 
 export async function toggleReaction(targetType: "post" | "comment", targetId: string, kind: string, path: string) {

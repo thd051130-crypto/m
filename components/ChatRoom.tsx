@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
-import { ChevronDown, ChevronLeft, ChevronUp, Info, LogOut, Megaphone, MoreVertical, Send } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronUp, HeartHandshake, Info, LogOut, Megaphone, MoreVertical, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { deleteMessage, leaveGroup, sendMessage, toggleMessageReaction } from "@/app/(main)/groups/actions";
 import { blockUser } from "@/app/(main)/stories/actions";
@@ -11,6 +11,8 @@ import type { PublicProfile } from "@/lib/types";
 import { Avatar } from "./Avatar";
 import { ReportSheet } from "./ReportSheet";
 import { ConfirmSheet } from "./ConfirmSheet";
+import { CrisisCard } from "./CrisisCard";
+import { SuggestButton } from "./SuggestButton";
 
 export type ChatMessage = {
   id: string;
@@ -20,6 +22,7 @@ export type ChatMessage = {
   deleted_at: string | null;
   created_at: string;
 };
+export type AiMessage = { id: string; group_id: string; kind: string; body: string; created_at: string };
 type Reaction = { message_id: string; user_id: string; kind: string };
 type Member = { user_id: string; role: string; joined_at: string; profile: PublicProfile | null };
 
@@ -32,6 +35,8 @@ export function ChatRoom({
   initialMessages,
   initialProfiles,
   initialReactions,
+  initialAi,
+  aiOn,
   pageSize,
 }: {
   group: { id: string; name: string; description: string; notice: string | null; max_members: number };
@@ -40,12 +45,16 @@ export function ChatRoom({
   initialMessages: ChatMessage[];
   initialProfiles: Record<string, PublicProfile>;
   initialReactions: Reaction[];
+  initialAi: AiMessage[];
+  aiOn: boolean;
   pageSize: number;
 }) {
   const supabase = useRef(createClient()).current;
   const [messages, setMessages] = useState(initialMessages);
   const [profiles, setProfiles] = useState(initialProfiles);
   const [reactions, setReactions] = useState(initialReactions);
+  const [aiMessages, setAiMessages] = useState(initialAi);
+  const [showCrisis, setShowCrisis] = useState(false);
   const [hasMore, setHasMore] = useState(initialMessages.length >= pageSize);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(true);
@@ -89,6 +98,14 @@ export function ChatRoom({
           setMessages((prev) => prev.map((x) => (x.id === m.id ? m : x)));
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "ai_messages", filter: `group_id=eq.${group.id}` },
+        (payload) => {
+          const m = payload.new as AiMessage;
+          setAiMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+        },
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
@@ -105,7 +122,7 @@ export function ChatRoom({
     } else if (stickToBottom.current) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, aiMessages]);
 
   const loadOlder = async () => {
     if (loadingOlder || !hasMore || messages.length === 0) return;
@@ -130,6 +147,15 @@ export function ChatRoom({
         .in("message_id", older.map((m) => m.id));
       setReactions((r) => [...r, ...(rs ?? [])]);
     }
+    if (older.length) {
+      const { data: ai } = await supabase
+        .from("ai_messages")
+        .select("id, group_id, kind, body, created_at")
+        .eq("group_id", group.id)
+        .gte("created_at", older[0].created_at)
+        .lt("created_at", messages[0].created_at);
+      setAiMessages((prev) => [...(ai ?? []), ...prev]);
+    }
     prevHeight.current = listRef.current?.scrollHeight ?? null;
     setMessages((prev) => [...older, ...prev]);
     setHasMore(older.length >= pageSize);
@@ -151,6 +177,7 @@ export function ChatRoom({
       const res = await sendMessage(group.id, body);
       if (res.error) setError(res.error);
       else {
+        if (res.crisis) setShowCrisis(true);
         setText("");
         stickToBottom.current = true;
       }
@@ -219,7 +246,17 @@ export function ChatRoom({
           <p className="mt-10 text-center text-sm text-ink-soft">첫 인사를 건네 보세요. 가벼운 “안녕하세요”도 좋아요.</p>
         )}
         <ul className="flex flex-col gap-3">
-          {messages.map((m, i) => {
+          {timeline(messages, aiMessages, hasMore).map((item) => {
+            if (item.ai)
+              return (
+                <li key={item.ai.id} className="mx-auto w-full max-w-[90%] rounded-[16px] border border-point/60 bg-[#f3f8f1] px-4 py-3 text-sm">
+                  <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-point-strong">
+                    <HeartHandshake size={14} strokeWidth={1.75} /> 마음이음 도우미 · {AI_KIND[item.ai.kind] ?? "안내"}
+                  </p>
+                  <p className="whitespace-pre-wrap">{item.ai.body}</p>
+                </li>
+              );
+            const { m, i } = item;
             const mine = m.sender_id === me;
             const p = m.sender_id ? profiles[m.sender_id] : null;
             const showHead = !mine && (i === 0 || messages[i - 1].sender_id !== m.sender_id);
@@ -265,7 +302,17 @@ export function ChatRoom({
       </div>
 
       <div className="shrink-0 border-t border-beige bg-ivory px-3 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))]">
+        {showCrisis && (
+          <div className="mb-2 max-h-[50dvh] overflow-y-auto">
+            <CrisisCard onClose={() => setShowCrisis(false)} />
+          </div>
+        )}
         {error && <p className="error mb-2">{error}</p>}
+        {aiOn && (
+          <div className="mb-2">
+            <SuggestButton context={`group:${group.id}`} onPick={(t) => setText(t)} />
+          </div>
+        )}
         <form
           className="flex items-end gap-2"
           onSubmit={(e) => {
@@ -412,4 +459,18 @@ function LongPress({ onLongPress, children }: { onLongPress: () => void; childre
       {children}
     </div>
   );
+}
+
+const AI_KIND: Record<string, string> = { topic: "오늘의 대화 주제", nudge: "대화 이어가기", activity: "이번 주 함께 해요" };
+
+type TimelineItem = { ai: AiMessage; m?: never; i?: never } | { ai?: undefined; m: ChatMessage; i: number };
+
+/** 사람 메시지와 도우미 메시지를 시간순으로 합친다 */
+function timeline(messages: ChatMessage[], ai: AiMessage[], hasMore: boolean): TimelineItem[] {
+  const from = hasMore && messages.length ? messages[0].created_at : "";
+  const items: (TimelineItem & { t: string })[] = [
+    ...messages.map((m, i) => ({ m, i, t: m.created_at })),
+    ...ai.filter((a) => a.created_at >= from).map((a) => ({ ai: a, t: a.created_at })),
+  ];
+  return items.sort((a, b) => (a.t < b.t ? -1 : a.t > b.t ? 1 : 0));
 }
