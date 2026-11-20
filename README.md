@@ -1,6 +1,6 @@
 # 마음이음
 
-AI가 비슷한 마음·관심사의 성인을 5~8명 소그룹으로 연결해 주는 익명 소셜 커뮤니티.
+비슷한 마음·관심사의 성인을 5~8명 소그룹으로 연결해 주는 익명 소셜 커뮤니티.
 Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
 
 ## 진행 단계
@@ -9,7 +9,7 @@ Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
 |---|---|---|
 | 1 | MVP: 가입 → 마음 선택 → 홈 → 이야기(글·댓글·공감·저장·신고·차단) → 마이(탈퇴 포함) | ✅ 구현 |
 | 2 | 그룹 매칭 + 실시간 그룹 채팅 | ✅ 구현 |
-| 3 | AI 커뮤니티 매니저 + 위기 대응(109 안내) | ✅ 구현 |
+| 3 | 위기 대응(109 안내) + 키워드 모더레이션 (AI 기능은 제외) | ✅ 구현 |
 | 4 | 관리자 + 알림 + PWA | ✅ 구현 |
 
 ## 로컬 실행
@@ -19,8 +19,9 @@ Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
    - `001_init.sql`: 테이블 + RLS + 트리거
    - `002_seed_daily_questions.sql`: 오늘의 질문 30개
    - `003_groups.sql`: 그룹·멤버·메시지·대기열 + RLS + Realtime + 초기 그룹 10개
-   - `004_ai_safety.sql`: AI 메시지·모더레이션·위기 알림·AI 사용량
+   - `004_ai_safety.sql`: 위기 알림 (AI 테이블은 006에서 제거)
    - `005_admin_notifications.sql`: 이용 제한 기간, 관리자 로그, 알림(트리거), 알림 설정, 웹 푸시 구독
+   - `006_remove_ai.sql`: AI 관련 테이블 제거
 3. Authentication → URL Configuration
    - Site URL: `http://localhost:3000`
    - Redirect URLs에 `http://localhost:3000/auth/callback` 추가
@@ -34,13 +35,11 @@ Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
    npm run dev
    ```
 
-## AI·안전 (3단계)
+## 안전 기능
 
-- `OPENAI_API_KEY`가 없으면 AI 기능(주제·이어주기·활동·문구 추천·Moderation API)은 꺼지고, 위기·욕설·연락처 **키워드 검사는 계속 동작**한다.
-- 저장 전 검사(`lib/safety/check.ts`): 연락처 → 차단 / 명백한 욕설 → 차단 / 애매함 → 저장 + `moderation_flags` / 위기 표현 → **저장하고** 작성자에게 109 카드 + `safety_alerts` + 웹훅.
-- 위기 키워드는 `lib/safety/keywords.ts`. `npm test`로 감지 테스트.
-- Cron (`vercel.json`, `CRON_SECRET` 필요): 매일 09:00 KST 대화 주제, 매시 대화 이어주기(6시간 조용하면, 하루 2회), 월요일 공동 활동. 그룹당 AI 메시지 하루 4개. Vercel Hobby 플랜은 cron이 하루 1회로 제한되니 매시 실행은 Pro 또는 Supabase cron으로.
-- 문구 추천은 사용자당 하루 20회, 위기 표현이 있는 글·대화에서는 추천하지 않는다.
+- AI(OpenAI) 기능은 쓰지 않는다. 검사는 전부 키워드 기반이다 (`lib/safety/keywords.ts`, `npm test`).
+- 저장 전 서버 검사(`lib/safety/check.ts`): 연락처 → 차단 / 명백한 욕설 → 차단 / 위기 표현 → **막지 않고 저장**하고, 작성자에게 109 카드 + `safety_alerts` 기록 + 웹훅(`SAFETY_ALERT_WEBHOOK_URL`, 선택).
+- 위기 표현이 있는 글에는 다른 사용자에게도 "도움이 필요하면 109" 배너가 뜬다.
 
 ## 관리자 (4단계)
 

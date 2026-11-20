@@ -1,8 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getUser } from "@/lib/supabase/server";
 import { fetchProfiles } from "@/lib/data";
-import { ChatRoom, type AiMessage, type ChatMessage } from "@/components/ChatRoom";
-import { aiEnabled } from "@/lib/ai/openai";
+import { ChatRoom, type ChatMessage } from "@/components/ChatRoom";
 import { CHAT_PAGE } from "@/lib/constants";
 
 
@@ -32,12 +31,6 @@ export default async function GroupChatPage({ params }: { params: Promise<{ id: 
     ...(members ?? []).map((m) => m.user_id),
     ...messages.map((m) => m.sender_id),
   ]);
-  const { data: ai } = await supabase
-    .from("ai_messages")
-    .select("id, group_id, kind, body, created_at")
-    .eq("group_id", id)
-    .order("created_at", { ascending: false })
-    .limit(20);
   const { data: reactions } = messages.length
     ? await supabase.from("message_reactions").select("message_id, user_id, kind").in("message_id", messages.map((m) => m.id))
     : { data: [] };
@@ -50,8 +43,6 @@ export default async function GroupChatPage({ params }: { params: Promise<{ id: 
       initialMessages={messages}
       initialProfiles={Object.fromEntries(profileMap)}
       initialReactions={reactions ?? []}
-      initialAi={((ai ?? []) as AiMessage[]).reverse()}
-      aiOn={aiEnabled()}
       pageSize={CHAT_PAGE}
     />
   );
