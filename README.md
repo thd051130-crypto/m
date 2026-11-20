@@ -10,7 +10,7 @@ Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
 | 1 | MVP: 가입 → 마음 선택 → 홈 → 이야기(글·댓글·공감·저장·신고·차단) → 마이(탈퇴 포함) | ✅ 구현 |
 | 2 | 그룹 매칭 + 실시간 그룹 채팅 | ✅ 구현 |
 | 3 | AI 커뮤니티 매니저 + 위기 대응(109 안내) | ✅ 구현 |
-| 4 | 관리자 + 알림 + PWA | 예정 |
+| 4 | 관리자 + 알림 + PWA | ✅ 구현 |
 
 ## 로컬 실행
 
@@ -20,6 +20,7 @@ Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
    - `002_seed_daily_questions.sql`: 오늘의 질문 30개
    - `003_groups.sql`: 그룹·멤버·메시지·대기열 + RLS + Realtime + 초기 그룹 10개
    - `004_ai_safety.sql`: AI 메시지·모더레이션·위기 알림·AI 사용량
+   - `005_admin_notifications.sql`: 이용 제한 기간, 관리자 로그, 알림(트리거), 알림 설정, 웹 푸시 구독
 3. Authentication → URL Configuration
    - Site URL: `http://localhost:3000`
    - Redirect URLs에 `http://localhost:3000/auth/callback` 추가
@@ -40,6 +41,13 @@ Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
 - 위기 키워드는 `lib/safety/keywords.ts`. `npm test`로 감지 테스트.
 - Cron (`vercel.json`, `CRON_SECRET` 필요): 매일 09:00 KST 대화 주제, 매시 대화 이어주기(6시간 조용하면, 하루 2회), 월요일 공동 활동. 그룹당 AI 메시지 하루 4개. Vercel Hobby 플랜은 cron이 하루 1회로 제한되니 매시 실행은 Pro 또는 Supabase cron으로.
 - 문구 추천은 사용자당 하루 20회, 위기 표현이 있는 글·대화에서는 추천하지 않는다.
+
+## 관리자 (4단계)
+
+- 관리자 지정은 Supabase SQL Editor에서만: `update profiles set role = 'admin' where id = '<user uuid>';`
+- `/admin`: 비로그인은 middleware에서 404, 로그인했어도 `role != 'admin'`이면 서버에서 404.
+- 모든 조치는 service role 서버 액션으로 하고 `admin_actions`에 기록. 사용자 이메일은 `ab***@gmail.com`으로 마스킹.
+- 이용 제한: `status='suspended'` + `suspended_until` (null이면 영구). 기간이 지나면 자동으로 쓰기 가능.
 
 ## 보안 설계 요약
 
@@ -67,4 +75,5 @@ RLS 동작은 `supabase/tests/rls_check.sql`, `groups_check.sql`로 로컬 Postg
 
 - 아바타 12개는 이모지 placeholder (일러스트로 교체 예정)
 - 이용약관·개인정보 처리방침은 "샘플" 문서
-- 알림 탭은 빈 상태 (4단계)
+- 웹 푸시는 구조(`push_subscriptions`, `sw.js` push 핸들러)만 있고 발송은 꺼져 있음
+- PWA 아이콘은 임시 디자인
