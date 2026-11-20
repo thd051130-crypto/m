@@ -77,7 +77,7 @@ export async function submitReport(_: ActionState, form: FormData): Promise<Acti
   const target_id = String(form.get("target_id") ?? "");
   const reason = String(form.get("reason") ?? "");
   const detail = String(form.get("detail") ?? "").trim().slice(0, 500) || null;
-  if (!["post", "comment", "user"].includes(target_type)) return { error: "잘못된 요청이에요." };
+  if (!["post", "comment", "user", "message"].includes(target_type)) return { error: "잘못된 요청이에요." };
   if (!keysOf(REPORT_REASONS).has(reason)) return { error: "신고 이유를 골라 주세요." };
   const { error } = await supabase.from("reports").insert({ target_type, target_id, reason, detail });
   if (error) return { error: "신고를 접수하지 못했어요." };

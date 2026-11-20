@@ -99,3 +99,4 @@ export function labelOf<T extends { key: string; label: string }>(list: readonly
 export function keysOf<T extends { key: string }>(list: readonly T[]) {
   return new Set(list.map((i) => i.key));
 }
+export const CHAT_PAGE = 50;
