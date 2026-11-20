@@ -9,7 +9,7 @@ export function ReportSheet({
   targetId,
   onClose,
 }: {
-  targetType: "post" | "comment" | "user";
+  targetType: "post" | "comment" | "user" | "message";
   targetId: string;
   onClose: () => void;
 }) {

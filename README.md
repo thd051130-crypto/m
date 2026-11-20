@@ -8,7 +8,7 @@ Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | 1 | MVP: 가입 → 마음 선택 → 홈 → 이야기(글·댓글·공감·저장·신고·차단) → 마이(탈퇴 포함) | ✅ 구현 |
-| 2 | 그룹 매칭 + 실시간 그룹 채팅 | 예정 |
+| 2 | 그룹 매칭 + 실시간 그룹 채팅 | ✅ 구현 |
 | 3 | AI 커뮤니티 매니저 + 위기 대응(109 안내) | 예정 |
 | 4 | 관리자 + 알림 + PWA | 예정 |
 
@@ -18,6 +18,7 @@ Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
 2. SQL Editor에서 `supabase/migrations/` 파일을 번호 순서대로 실행
    - `001_init.sql`: 테이블 + RLS + 트리거
    - `002_seed_daily_questions.sql`: 오늘의 질문 30개
+   - `003_groups.sql`: 그룹·멤버·메시지·대기열 + RLS + Realtime + 초기 그룹 10개
 3. Authentication → URL Configuration
    - Site URL: `http://localhost:3000`
    - Redirect URLs에 `http://localhost:3000/auth/callback` 추가
@@ -42,7 +43,7 @@ Next.js(App Router) + TypeScript + Tailwind CSS + Supabase.
 - 탈퇴: 서버 액션에서 service role로 auth 사용자 삭제 → 글·댓글 `author_id`가 null → "탈퇴한 사용자"로 표시.
 - `SUPABASE_SERVICE_ROLE_KEY`는 `lib/supabase/admin.ts`(server-only)에서만 사용.
 
-RLS 동작은 `supabase/tests/rls_check.sql`로 로컬 Postgres에서 확인할 수 있다 (`auth_stub.sql` 먼저 실행).
+RLS 동작은 `supabase/tests/rls_check.sql`, `groups_check.sql`로 로컬 Postgres에서 확인할 수 있다 (`auth_stub.sql` 먼저 실행).
 
 ## 1단계 완료 기준 체크
 
@@ -57,4 +58,4 @@ RLS 동작은 `supabase/tests/rls_check.sql`로 로컬 Postgres에서 확인할 
 
 - 아바타 12개는 이모지 placeholder (일러스트로 교체 예정)
 - 이용약관·개인정보 처리방침은 "샘플" 문서
-- 그룹·알림 탭, 홈의 그룹 카드는 "곧 만나요" 빈 상태
+- 알림 탭은 빈 상태 (4단계)

@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { Sparkles, Users } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { getUser } from "@/lib/supabase/server";
 import { getMyProfile, withAuthors } from "@/lib/data";
 import { todayKST } from "@/lib/format";
 import { Avatar } from "@/components/Avatar";
 import { PostCard } from "@/components/PostCard";
+import { GroupCard } from "@/components/GroupCard";
+import { loadGroupsOverview } from "@/lib/groups";
 
 export default async function HomePage() {
   const { supabase, user } = await getUser();
@@ -30,6 +32,7 @@ export default async function HomePage() {
     : { data: [] };
   const ordered = ids.map((id) => postRows?.find((p) => p.id === id)).filter((p): p is NonNullable<typeof p> => !!p).slice(0, 3);
   const posts = await withAuthors(supabase, ordered);
+  const { myGroups, recommendations } = await loadGroupsOverview(supabase, user!.id);
 
   return (
     <main className="px-4">
@@ -69,22 +72,31 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="mb-6 grid gap-3">
-        <SoonCard title="참여 중인 그룹" />
-        <SoonCard title="새로운 그룹 추천" />
+      <section className="mb-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-bold">참여 중인 그룹</h2>
+          <Link href="/groups" className="text-sm text-ink-soft">전체 보기</Link>
+        </div>
+        {myGroups.length ? (
+          <div className="flex flex-col gap-3">
+            {myGroups.slice(0, 3).map((g) => (
+              <GroupCard key={g.id} group={g} href={`/groups/${g.id}`} />
+            ))}
+          </div>
+        ) : (
+          <p className="card text-sm text-ink-soft">아직 참여한 그룹이 없어요.</p>
+        )}
+      </section>
+
+      <section className="mb-6">
+        <h2 className="mb-3 font-bold">새로운 그룹 추천</h2>
+        <div className="flex flex-col gap-3">
+          {recommendations.slice(0, 2).map((g) => (
+            <GroupCard key={g.id} group={g} reason={g.reason} href="/groups" />
+          ))}
+          {recommendations.length === 0 && <p className="card text-sm text-ink-soft">지금은 추천할 그룹이 없어요.</p>}
+        </div>
       </section>
     </main>
-  );
-}
-
-function SoonCard({ title }: { title: string }) {
-  return (
-    <div className="card flex items-center gap-3">
-      <Users size={22} strokeWidth={1.75} className="text-point-strong" />
-      <div>
-        <p className="font-semibold">{title}</p>
-        <p className="text-sm text-ink-soft">곧 만나요. 비슷한 마음의 소그룹을 준비하고 있어요.</p>
-      </div>
-    </div>
   );
 }
