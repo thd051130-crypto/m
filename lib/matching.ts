@@ -24,7 +24,7 @@ export type Recommendation = GroupCandidate & { score: number; reason: string; c
 const W = { interest: 3, style: 2, time: 2, topic: 1 } as const;
 
 /**
- * 규칙 기반 그룹 추천. 3단계 이후 AI 추천으로 바꿀 때 이 함수만 교체하면 된다.
+ * 규칙 기반 그룹 추천. 추천 방식을 바꿀 때는 이 함수만 교체하면 된다.
  * 마음 상태 원문(moods)은 점수에만 쓰고 추천 이유 문구에는 절대 넣지 않는다.
  */
 export function recommendGroups(prefs: MoodPrefs, groups: GroupCandidate[], limit = 5): Recommendation[] {

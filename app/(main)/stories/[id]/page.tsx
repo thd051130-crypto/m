@@ -10,7 +10,6 @@ import { ItemMenu } from "@/components/ItemMenu";
 import { CommentForm } from "@/components/CommentForm";
 import { SaveButton } from "@/components/SaveButton";
 import { CrisisCard } from "@/components/CrisisCard";
-import { aiEnabled } from "@/lib/ai/openai";
 import { HelpBanner } from "@/components/HelpBanner";
 
 export default async function StoryPage({
@@ -94,7 +93,7 @@ export default async function StoryPage({
           ))}
         </ul>
         <div className="mt-4">
-          <CommentForm postId={id} aiOn={aiEnabled()} />
+          <CommentForm postId={id} />
         </div>
       </section>
     </main>
