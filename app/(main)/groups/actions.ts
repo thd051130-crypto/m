@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/supabase/server";
 import { REACTIONS, keysOf } from "@/lib/constants";
+import { checkText, recordSafety } from "@/lib/safety/check";
 
 async function requireUser() {
   const { supabase, user } = await getUser();
@@ -53,18 +54,21 @@ export async function leaveQueue() {
   revalidatePath("/groups");
 }
 
-export async function sendMessage(groupId: string, body: string): Promise<{ error?: string }> {
-  const { supabase } = await requireUser();
+export async function sendMessage(groupId: string, body: string): Promise<{ error?: string; crisis?: boolean }> {
+  const { supabase, user } = await requireUser();
   const text = body.trim();
   if (!text) return { error: "내용을 적어 주세요." };
   if (text.length > 1000) return { error: "1000자까지 보낼 수 있어요." };
-  const { error } = await supabase.from("messages").insert({ group_id: groupId, body: text });
+  const verdict = await checkText(text);
+  if (verdict.action === "block") return { error: verdict.message };
+  const { data, error } = await supabase.from("messages").insert({ group_id: groupId, body: text }).select("id").single();
   if (error) {
     if (error.message.includes("rate_limited")) return { error: "조금 천천히 보내 주세요. 10초에 5개까지 보낼 수 있어요." };
     if (error.code === "42501") return { error: "이 그룹에 메시지를 보낼 수 없어요." };
     return { error: "보내지 못했어요. 다시 시도해 주세요." };
   }
-  return {};
+  await recordSafety(verdict, { type: "message", id: data.id, userId: user.id });
+  return { crisis: verdict.action === "allow" && verdict.crisis };
 }
 
 export async function deleteMessage(messageId: string) {

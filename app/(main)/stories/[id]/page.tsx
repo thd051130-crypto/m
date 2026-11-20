@@ -9,16 +9,26 @@ import { ReactionBar } from "@/components/ReactionBar";
 import { ItemMenu } from "@/components/ItemMenu";
 import { CommentForm } from "@/components/CommentForm";
 import { SaveButton } from "@/components/SaveButton";
+import { CrisisCard } from "@/components/CrisisCard";
+import { aiEnabled } from "@/lib/ai/openai";
+import { HelpBanner } from "@/components/HelpBanner";
 
-export default async function StoryPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function StoryPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ help?: string }>;
+}) {
   const { id } = await params;
+  const { help } = await searchParams;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { supabase, user } = await getUser();
   if (!user) notFound();
 
   const { data: post } = await supabase
     .from("posts")
-    .select("id, author_id, category, body, created_at")
+    .select("id, author_id, category, body, created_at, safety_flag")
     .eq("id", id)
     .maybeSingle();
   if (!post) notFound(); // 숨김·차단·삭제된 글은 RLS로 안 보인다
@@ -43,6 +53,12 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
   return (
     <main>
       <PageHeader title={labelOf(CATEGORIES, post.category)} back="/stories" />
+      {help === "1" && post.author_id === user.id && (
+        <div className="mx-4 mb-4">
+          <CrisisCard />
+        </div>
+      )}
+      {post.safety_flag && <HelpBanner />}
       <article className="card mx-4">
         <div className="mb-4 flex items-center gap-3">
           <Avatar avatarKey={postWithAuthor.author?.avatar_key} size={40} />
@@ -78,7 +94,7 @@ export default async function StoryPage({ params }: { params: Promise<{ id: stri
           ))}
         </ul>
         <div className="mt-4">
-          <CommentForm postId={id} />
+          <CommentForm postId={id} aiOn={aiEnabled()} />
         </div>
       </section>
     </main>

@@ -100,3 +100,11 @@ export function keysOf<T extends { key: string }>(list: readonly T[]) {
   return new Set(list.map((i) => i.key));
 }
 export const CHAT_PAGE = 50;
+
+/** 위기 상담 안내. 출시 전 보건복지부 공식 페이지에서 번호·링크를 다시 확인할 것. */
+export const HELPLINES = {
+  suicide: { number: "109", label: "자살예방상담전화", note: "24시간, 무료" },
+  emergency: ["112", "119"],
+  // 마들랜(SNS 상담) 공식 링크는 출시 전 직접 확인해서 NEXT_PUBLIC_MADLEN_URL에 넣는다.
+  madlenUrl: process.env.NEXT_PUBLIC_MADLEN_URL || "",
+} as const;
