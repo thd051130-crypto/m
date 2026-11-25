@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오늘의 발견 — 개인 지식 포털</title>
+<meta name="description" content="경제부터 우주, 심리, 역사, 기술까지. 궁금했던 세상을 가볍게 탐험하는 나만의 지식 공간.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+<div class="wrap topin">
+<div class="brand">오늘의 <span>발견✦</span>
+</div>
+<nav class="topnav">
+<button class="pillbtn" id="savedView">♡ 저장한 글</button>
+<button class="pillbtn" id="allView">전체 콘텐츠</button>
+</nav>
+</div>
+</header>
+<main class="wrap">
+<section class="hero">
+<div class="today" id="dateLabel">TODAY'S EXPLORATION</div>
+<h1>오늘은 무엇을<br>발견해 볼까요?</h1>
+<p>경제부터 우주, 심리, 역사, 기술까지. 궁금했던 세상을 가볍게 탐험하는 나만의 지식 공간.</p>
+<div class="search">
+<input id="searchInput" placeholder="관심 있는 주제나 단어를 검색해 보세요">
+<button id="searchBtn">검색</button>
+</div>
+</section>
+<div class="stats">
+<div class="stat">
+<b id="totalCount">0</b>개의 읽을거리</div>
+<div class="stat">
+<b id="categoryCount">0</b>개 주제</div>
+<div class="stat">
+<b id="savedCount">0</b>개 저장</div>
+</div>
+<div class="sectionhead">
+<h2>주제별 탐험</h2>
+<p>원하는 분야를 골라보세요</p>
+</div>
+<div class="cats" id="categories">
+</div>
+<div class="sectionhead">
+<h2 id="listTitle">지금 발견할 이야기</h2>
+<p id="listSub">카드를 눌러 자세히 읽기</p>
+</div>
+<section class="grid" id="contentGrid">
+</section>
+<section class="featuregrid">
+<article class="feature dark">
+<h3>🧭 무작위 발견</h3>
+<p>평소 찾아보지 않았던 분야에서 하나의 흥미로운 주제를 골라보세요.</p>
+<a href="#" id="randomBtn">오늘의 랜덤 지식 뽑기 →</a>
+</article>
+<article class="feature">
+<h3>🗒️ 나만의 북마크</h3>
+<p>관심 있는 카드의 하트를 눌러 저장하세요. 이 브라우저에 저장됩니다.</p>
+<div class="minirow">
+<div class="bubble">♥</div>
+<div>
+<strong>저장한 콘텐츠 모아보기</strong>
+<small>언제든 다시 읽을 수 있어요</small>
+</div>
+</div>
+</article>
+<article class="feature">
+<h3>🌱 가볍게 읽기</h3>
+<p>짧은 설명으로 시작해 더 궁금해진 분야는 스스로 확장해보세요. 콘텐츠는 학습용 일반 정보입니다.</p>
+<div class="minirow">
+<div class="bubble">📚</div>
+<div>
+<strong>호기심이 다음 발견으로</strong>
+<small>하나의 질문에서 출발하기</small>
+</div>
+</div>
+</article>
+</section>
+<div class="footer">오늘의 발견 · 개인용 지식 탐험 웹사이트 · 콘텐츠 저장은 이 기기 브라우저에만 기록됩니다.</div>
+</main>
+<div class="modal" id="modal">
+<div class="modalbox">
+<button class="modalclose" id="closeModal">✕</button>
+<div id="modalContent">
+</div>
+</div>
+</div>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
